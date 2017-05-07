@@ -69,13 +69,44 @@ class BmpParser: Parser {
     }
 
     private fun createPixelArray(bytes: Array<Byte>, bmpInfo: BmpInfo, colorTable: Array<Color>): Array<Array<Pixel>> {
-        val pixels: Array<Array<Pixel>> = Array(bmpInfo.width) {Array<Pixel>(bmpInfo.height) {Pixel(Color.RED)}}
-        //TODO: parse pixels data
+        val pixels: Array<Array<Pixel>> = Array(bmpInfo.width) {Array(bmpInfo.height) {Pixel(Color.RED)}}
+        if(bmpInfo.headerSize == 12 || bmpInfo.compression == BmpInfo.CompressionType.BI_RGB ||
+        bmpInfo.compression == BmpInfo.CompressionType.BI_BITFIELDS || bmpInfo.compression == BmpInfo.CompressionType.BI_ALPHABITFIELDS) {
+            Logger.debugInfo("Parsing pixel data.")
+            //array[][]
+            var byteNum = 0
+            var x: Int = 0
+            var y: Int = bmpInfo.height - 1
+            while(y >= 0 && byteNum < bmpInfo.pixelDataSize) {
+                if(bmpInfo.bitsPerPixel <= 8){
+                    val pixelsInByte = 8 / bmpInfo.bitsPerPixel
+                    var rowByteWidth = bmpInfo.width / pixelsInByte
+                    rowByteWidth += (4 - (rowByteWidth % 4))
+                    val colorIndex = partOfByte(readLittleEndian(bytes, bmpInfo.pixelDataOffset + byteNum, 1),
+                            ((x % (pixelsInByte))*bmpInfo.bitsPerPixel), bmpInfo.bitsPerPixel)
+//                    Logger.debugInfo("Parsing pixels. x $x, y $y, byteNum $byteNum, color - ${colorTable[colorIndex]}")
+                    pixels[x][y] = Pixel(colorTable[colorIndex])
+                    x++
+                    byteNum += if(x % (pixelsInByte) == 0) 1 else 0
+                    if(x % bmpInfo.width == 0) {
+                        println(byteNum)
+                        if(byteNum % rowByteWidth != 0)
+                            byteNum += (rowByteWidth - (byteNum % rowByteWidth))
+                        x = 0
+                        y--
+                    }
+                } else {
+                    TODO("Not implemented pixel data parsing with 16 or more bits per pixel.")
+                }
+            }
+        } else {
+            TODO("Parse pixel data with other compression algorithms")
+        }
         return pixels
     }
 
     private fun createColorTable(bytes: Array<Byte>, bmpInfo: BmpInfo): Array<Color> {
-        var colorTable: Array<Color> = Array(0) {Color.BLACK}
+        var colorTable: Array<Color> = Array(bmpInfo.colorsUsed) {Color.BLACK}
         if(bmpInfo.bitsPerPixel <= 8) {
             colorTable = Array(1.shl(bmpInfo.bitsPerPixel)) {Color.BLACK}
 
@@ -95,17 +126,19 @@ class BmpParser: Parser {
             }
 
             val bytesPerColor = 4 //RGBQUAD
-            for(i in 0..colorTable.size) {
+            for(i in 0..colorTable.size-1) {
                 val red = bytes[startingByte + i*bytesPerColor].toInt()
                 val green = readLittleEndian(bytes, startingByte + i*bytesPerColor + 1, 1)
                 val blue = readLittleEndian(bytes, startingByte + i*bytesPerColor + 2, 1)
-                colorTable += Color(if(red < 0) red + 256 else red,
+                colorTable[i] =  Color(if(red < 0) red + 256 else red,
                                     if(green < 0) green + 256 else green,
                                     if(blue < 0) blue + 256 else blue)
+//                Logger.debugInfo("$i th color is ${colorTable[i]}")
             }
             //OP, vnezapnoya paskhalochka
             //kak u vas dela?
         }
+        Logger.debugInfo("ColorTable size is ${colorTable.size}")
         return colorTable
     }
 }
