@@ -7,7 +7,7 @@ package tools
  */
 class Logger {
     companion object {
-        var debug: Boolean = true
+        var debug: Boolean = false
 
         fun debugInfo(s: String) {
             if(debug)

@@ -1,6 +1,7 @@
 package common
 
-import tools.InputThread
+import controllers.MainController
+import tools.Input
 
 /**
  * Created by Egor Nemchinov on 04.05.17.
@@ -8,6 +9,6 @@ import tools.InputThread
  * SPbU, 2017
  */
 fun main(args: Array<String>) {
-    InputThread(Controller()).start()
+    Thread(Input(MainController())).start()
 }
 
