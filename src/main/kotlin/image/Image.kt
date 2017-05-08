@@ -1,5 +1,6 @@
 package image
 
+import tools.Logger
 import java.awt.Color
 import java.awt.image.BufferedImage
 import java.io.File
@@ -37,8 +38,12 @@ class Image(val imageInfo: ImageInfo = BmpInfo(), var pixels: Array<Array<Color>
             return false
         for(x in 0..pixels.size-1) {
             for(y in 0..pixels[0].size-1) {
-                if(this.colorAt(x, y) != other.colorAt(x, y))
+                val thisColor = this.colorAt(x, y)
+                val otherColor = other.colorAt(x, y)
+                if(thisColor != thisColor) {
+                    Logger.debugInfo("Images don't match at $x-$y. $thisColor != $otherColor")
                     return false
+                }
             }
         }
         return true

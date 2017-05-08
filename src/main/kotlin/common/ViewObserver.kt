@@ -9,8 +9,16 @@ import views.View
  * @Link github.com/ImmortalTurtle
  * SPbU, 2017
  */
-class ViewObserver(var parser: Parser, var view: View) {
+class ViewObserver(var parser: Parser?, var views: List<View> = emptyList<View>()) {
+    constructor(parser: Parser?, view: View): this(parser, mutableListOf(view))
+
+    fun addView(view: View) {
+        views += view
+        println("View added. Current list: $views")
+    }
+
     fun drawImage(image: Image) {
-        view.drawImage(image)
+        for(view in views)
+            view.drawImage(image)
     }
 }

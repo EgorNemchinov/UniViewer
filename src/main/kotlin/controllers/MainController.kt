@@ -18,6 +18,7 @@ import java.nio.file.Paths
 class MainController : Controller{
     private var parser: Parser? = null
     private var view: View = ImageView() //default
+    override var viewObserver: ViewObserver = ViewObserver(null, view)
 
     override fun handleInput(input: String) {
         Logger.debugInfo("MainController.handlerInput($input) called")
@@ -34,7 +35,8 @@ class MainController : Controller{
                 Logger.error("File not found.")
                 return
             }
-            parser!!.viewObserver = ViewObserver(parser!!, view)
+            viewObserver.parser = parser!!
+            parser!!.viewObserver = viewObserver
             parser!!.parseFile(bytes.toTypedArray())
         }
     }
