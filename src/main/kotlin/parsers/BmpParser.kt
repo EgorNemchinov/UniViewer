@@ -3,7 +3,6 @@ package parsers
 import common.ViewObserver
 import image.BmpInfo
 import image.Image
-import image.Pixel
 import tools.Logger
 import views.ImageView
 import java.awt.Color
@@ -32,7 +31,7 @@ class BmpParser: Parser {
         val colorTable: Array<Color> = createColorTable(bytes, bmpInfo)
         //there is another case of using colorTable which is not considered
 
-        val pixels: Array<Array<Pixel>> = createPixelArray(bytes, bmpInfo, colorTable)
+        val pixels: Array<Array<Color>> = createPixelArray(bytes, bmpInfo, colorTable)
 
         val image: Image = Image(bmpInfo, pixels)
         viewObserver.drawImage(image)
@@ -41,7 +40,6 @@ class BmpParser: Parser {
     fun parseHeader(bytes: Array<Byte>, bmpInfo: BmpInfo) {
         bmpInfo.fileSize = readLittleEndian(bytes, 2, 4)
         bmpInfo.pixelDataOffset = readLittleEndian(bytes, 10, 4)
-        //offset to pixelArray we aren't using
 
         //DIB Header:
         bmpInfo.headerSize = readLittleEndian(bytes, 14, 4)
@@ -68,43 +66,6 @@ class BmpParser: Parser {
         }
     }
 
-    private fun createPixelArray(bytes: Array<Byte>, bmpInfo: BmpInfo, colorTable: Array<Color>): Array<Array<Pixel>> {
-        val pixels: Array<Array<Pixel>> = Array(bmpInfo.width) {Array(bmpInfo.height) {Pixel(Color.RED)}}
-        if(bmpInfo.headerSize == 12 || bmpInfo.compression == BmpInfo.CompressionType.BI_RGB ||
-        bmpInfo.compression == BmpInfo.CompressionType.BI_BITFIELDS || bmpInfo.compression == BmpInfo.CompressionType.BI_ALPHABITFIELDS) {
-            Logger.debugInfo("Parsing pixel data.")
-            //array[][]
-            var byteNum = 0
-            var x: Int = 0
-            var y: Int = bmpInfo.height - 1
-            while(y >= 0 && byteNum < bmpInfo.pixelDataSize) {
-                if(bmpInfo.bitsPerPixel <= 8){
-                    val pixelsInByte = 8 / bmpInfo.bitsPerPixel
-                    var rowByteWidth = bmpInfo.width / pixelsInByte
-                    rowByteWidth += (4 - (rowByteWidth % 4))
-                    val colorIndex = partOfByte(readLittleEndian(bytes, bmpInfo.pixelDataOffset + byteNum, 1),
-                            ((x % (pixelsInByte))*bmpInfo.bitsPerPixel), bmpInfo.bitsPerPixel)
-//                    Logger.debugInfo("Parsing pixels. x $x, y $y, byteNum $byteNum, color - ${colorTable[colorIndex]}")
-                    pixels[x][y] = Pixel(colorTable[colorIndex])
-                    x++
-                    byteNum += if(x % (pixelsInByte) == 0) 1 else 0
-                    if(x % bmpInfo.width == 0) {
-                        println(byteNum)
-                        if(byteNum % rowByteWidth != 0)
-                            byteNum += (rowByteWidth - (byteNum % rowByteWidth))
-                        x = 0
-                        y--
-                    }
-                } else {
-                    TODO("Not implemented pixel data parsing with 16 or more bits per pixel.")
-                }
-            }
-        } else {
-            TODO("Parse pixel data with other compression algorithms")
-        }
-        return pixels
-    }
-
     private fun createColorTable(bytes: Array<Byte>, bmpInfo: BmpInfo): Array<Color> {
         var colorTable: Array<Color> = Array(bmpInfo.colorsUsed) {Color.BLACK}
         if(bmpInfo.bitsPerPixel <= 8) {
@@ -127,12 +88,12 @@ class BmpParser: Parser {
 
             val bytesPerColor = 4 //RGBQUAD
             for(i in 0..colorTable.size-1) {
-                val red = bytes[startingByte + i*bytesPerColor].toInt()
+                val blue = readLittleEndian(bytes, startingByte + i*bytesPerColor, 1)
                 val green = readLittleEndian(bytes, startingByte + i*bytesPerColor + 1, 1)
-                val blue = readLittleEndian(bytes, startingByte + i*bytesPerColor + 2, 1)
+                val red = bytes[startingByte + i*bytesPerColor + 2].toInt()
                 colorTable[i] =  Color(if(red < 0) red + 256 else red,
-                                    if(green < 0) green + 256 else green,
-                                    if(blue < 0) blue + 256 else blue)
+                        if(green < 0) green + 256 else green,
+                        if(blue < 0) blue + 256 else blue)
 //                Logger.debugInfo("$i th color is ${colorTable[i]}")
             }
             //OP, vnezapnoya paskhalochka
@@ -141,11 +102,66 @@ class BmpParser: Parser {
         Logger.debugInfo("ColorTable size is ${colorTable.size}")
         return colorTable
     }
-}
 
-private fun intEqualsString(bytesToInt: Int, string: String): Boolean {
-    var charIndex = 0
-    val sum = (string).sumBy { it.toInt().shl(8*charIndex++) }
+    private fun createPixelArray(bytes: Array<Byte>, bmpInfo: BmpInfo, colorTable: Array<Color>): Array<Array<Color>> {
+        val pixels: Array<Array<Color>> = Array(bmpInfo.width) {Array(bmpInfo.height) {Color.RED}}
+        if(bmpInfo.headerSize == 12 || bmpInfo.compression == BmpInfo.CompressionType.BI_RGB ||
+        bmpInfo.compression == BmpInfo.CompressionType.BI_BITFIELDS || bmpInfo.compression == BmpInfo.CompressionType.BI_ALPHABITFIELDS) {
+            Logger.debugInfo("Parsing pixel data.")
+            //array[][]
+            var byteNum = 0
+            var rowByteWidth = Math.ceil(bmpInfo.width*bmpInfo.bitsPerPixel / 8.toDouble()).toInt()
+            if(rowByteWidth % 4 != 0)
+                rowByteWidth += (4 - (rowByteWidth % 4))
+            var x: Int = 0
+            var y: Int = bmpInfo.height - 1
+            while(y >= 0 && byteNum < bmpInfo.pixelDataSize) {
+                if(bmpInfo.bitsPerPixel <= 8){
+                    val pixelsInByte = 8 / bmpInfo.bitsPerPixel
+                    val colorIndex = partOfByte(readLittleEndian(bytes, bmpInfo.pixelDataOffset + byteNum, 1),
+                            ((x % (pixelsInByte))*bmpInfo.bitsPerPixel), bmpInfo.bitsPerPixel)
+//                    Logger.debugInfo("Parsing pixels. x $x, y $y, byteNum $byteNum, color - ${colorTable[colorIndex]}")
+                    pixels[x][y] = colorTable[colorIndex]
+                    x++
+                    byteNum += if(x % (pixelsInByte) == 0) 1 else 0
+                    if(x % bmpInfo.width == 0) {
+                        if(byteNum % rowByteWidth != 0)
+                            byteNum += (rowByteWidth - (byteNum % rowByteWidth))
+                        x = 0
+                        y--
+                    }
+                } else if((bmpInfo.bitsPerPixel == 32 || bmpInfo.bitsPerPixel == 24)
+                        && bmpInfo.compression != BmpInfo.CompressionType.BI_BITFIELDS
+                        && bmpInfo.compression != BmpInfo.CompressionType.BI_ALPHABITFIELDS) {
+                    //no bit masks, byte per r g & b
+                    val blue: Int = readLittleEndian(bytes, bmpInfo.pixelDataOffset + byteNum , 1)
+                    val green: Int = readLittleEndian(bytes, bmpInfo.pixelDataOffset + byteNum + 1, 1)
+                    val red: Int = readLittleEndian(bytes, bmpInfo.pixelDataOffset + byteNum + 2, 1)
+                    val alpha: Int = if(bmpInfo.bitsPerPixel == 32) readLittleEndian(bytes, bmpInfo.pixelDataOffset +  byteNum + 3, 1) else 255
+                    pixels[x][y] = Color(red, green, blue, alpha)
+                    x++
+                    byteNum += bmpInfo.bitsPerPixel / 8
+                    if(x % bmpInfo.width == 0) {
+                        x = 0
+                        y--
+                        if(byteNum % rowByteWidth != 0)
+                            byteNum += (rowByteWidth - (byteNum % rowByteWidth))
+                    }
+//                    TODO("Not implemented pixel data parsing with 16 or more bits per pixel.")
+                } else {
+                    TODO("Not implemented pixel data parsing with 16 or more bits per pixel.")
+                }
+            }
+        } else {
+            TODO("Not implemented parsing pixel data with other compression algorithms")
+        }
+        return pixels
+    }
+
+    private fun intEqualsString(bytesToInt: Int, string: String): Boolean {
+        var charIndex = 0
+        val sum = (string).sumBy { it.toInt().shl(8*charIndex++) }
 //    Logger.debugInfo("intEqualsString($bytesToInt, \"$string\") called. Comparing $bytesToInt and $sum")
-    return sum == bytesToInt
+        return sum == bytesToInt
+    }
 }

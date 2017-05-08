@@ -8,11 +8,18 @@ package image
 class BmpInfo(override var width: Int = 0, override var height: Int = 0): ImageInfo {
     var fileSize: Int = 0
     var pixelDataOffset: Int = 0
+        get() = if(field == 0) 14 + headerSize else field
     var headerSize: Int = 40
 
     var bitsPerPixel: Int = 8
     var compression: CompressionType = CompressionType.BI_RGB
     var pixelDataSize: Int = 0 //default 0 if stored in array[][]
+        get() {
+            if(field == 0)
+                return fileSize - pixelDataOffset
+            else
+                return field
+        }
 
     //resolution variables
     var xPixelsPerMeter: Int = 0

@@ -25,7 +25,7 @@ class ImagePanel(var image: Image, isDoubleBuffered: Boolean = true) : JPanel(is
         super.paintComponent(g)
         for (i in 0..image.imageInfo.height-1){
             for (j in 0..image.imageInfo.width-1){
-                g.color = image.pixelAt(j, i).color
+                g.color = image.colorAt(j, i)
                 g.drawRect(j, i, 1, 1)
             }
         }
