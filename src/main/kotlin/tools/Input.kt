@@ -4,7 +4,6 @@ import controllers.Controller
 
 /**
  * Created by Egor Nemchinov on 04.05.17.
- * @Link github.com/ImmortalTurtle
  * SPbU, 2017
  */
 class Input(val controller: Controller) : Runnable {
@@ -13,6 +12,11 @@ class Input(val controller: Controller) : Runnable {
 
     init {
         println(INIT_STRING)
+    }
+
+    constructor(controller: Controller, args: Array<String>): this(controller) {
+        if(args.isNotEmpty())
+            controller.openFile(args.last())
     }
 
     override fun run() {
@@ -27,14 +31,17 @@ class Input(val controller: Controller) : Runnable {
                 val cmdSplit = input.split(" ")
                 if (cmdSplit.size < 2) {
                     Logger.warning("Specify file path.")
-                    return
+                    continue
                 } else if (cmdSplit.size > 2) {
                     Logger.warning("Too many arguments.")
+                    continue
                 } else {
                     controller.openFile(cmdSplit[1])
                     continue
                 }
             }
+            if(input.trim() != "quit")
+                Logger.warning("Unknown command.")
         }
     }
 }

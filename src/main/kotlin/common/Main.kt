@@ -5,10 +5,9 @@ import tools.Input
 
 /**
  * Created by Egor Nemchinov on 04.05.17.
- * @Link github.com/ImmortalTurtle
  * SPbU, 2017
  */
 fun main(args: Array<String>) {
-    Thread(Input(MainController())).start()
+    Thread(Input(MainController(), args)).start()
 }
 

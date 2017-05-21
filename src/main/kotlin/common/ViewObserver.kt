@@ -6,7 +6,6 @@ import views.View
 
 /**
  * Created by Egor Nemchinov on 03.05.17.
- * @Link github.com/ImmortalTurtle
  * SPbU, 2017
  */
 class ViewObserver(var parser: Parser?, var views: List<View> = emptyList<View>()) {
@@ -14,7 +13,6 @@ class ViewObserver(var parser: Parser?, var views: List<View> = emptyList<View>(
 
     fun addView(view: View) {
         views += view
-        println("View added. Current list: $views")
     }
 
     fun drawImage(image: Image) {

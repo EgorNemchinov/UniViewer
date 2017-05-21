@@ -9,7 +9,6 @@ import java.awt.Color
 
 /**
  * Created by Egor Nemchinov on 03.05.17.
- * @Link github.com/ImmortalTurtle
  * SPbU, 2017
  */
 class BmpParser: Parser {
@@ -25,19 +24,20 @@ class BmpParser: Parser {
             return
         }
 
-        parseHeader(bytes, bmpInfo)
+        if(!parseHeader(bytes, bmpInfo))
+            return
         Logger.debugInfo("BmpInfo finished. Here it is: \n \t$bmpInfo")
 
         val colorTable: Array<Color> = createColorTable(bytes, bmpInfo)
         //there is another case of using colorTable which is not considered
 
-        val pixels: Array<Array<Color>> = createPixelArray(bytes, bmpInfo, colorTable)
+        val pixels: Array<Array<Color>> = createPixelArray(bytes, bmpInfo, colorTable) ?: return
 
         val image: Image = Image(bmpInfo, pixels)
         viewObserver.drawImage(image)
     }
 
-    fun parseHeader(bytes: Array<Byte>, bmpInfo: BmpInfo) {
+    fun parseHeader(bytes: Array<Byte>, bmpInfo: BmpInfo): Boolean {
         bmpInfo.fileSize = readLittleEndian(bytes, 2, 4)
         bmpInfo.pixelDataOffset = readLittleEndian(bytes, 10, 4)
 
@@ -61,9 +61,16 @@ class BmpParser: Parser {
                 bmpInfo.colorsImportant = readLittleEndian(bytes, 50, 4)
                 //ignored field - biPlanes
             }
-            108 -> TODO("108th BMP version is not implemented.")
-            124 -> TODO("124th BMP version is not implemented.")
+            108 -> {
+                Logger.error("Unable to read the file. 4th BMP version is not implemented.")
+                return false
+            }
+            124 -> {
+                Logger.error("Unable to read the file. 5th BMP version is not implemented.")
+                return false
+            }
         }
+        return true
     }
 
     private fun createColorTable(bytes: Array<Byte>, bmpInfo: BmpInfo): Array<Color> {
@@ -94,7 +101,6 @@ class BmpParser: Parser {
                 colorTable[i] =  Color(if(red < 0) red + 256 else red,
                         if(green < 0) green + 256 else green,
                         if(blue < 0) blue + 256 else blue)
-//                Logger.debugInfo("$i th color is ${colorTable[i]}")
             }
             //OP, vnezapnoya paskhalochka
             //kak u vas dela?
@@ -103,7 +109,7 @@ class BmpParser: Parser {
         return colorTable
     }
 
-    private fun createPixelArray(bytes: Array<Byte>, bmpInfo: BmpInfo, colorTable: Array<Color>): Array<Array<Color>> {
+    private fun createPixelArray(bytes: Array<Byte>, bmpInfo: BmpInfo, colorTable: Array<Color>): Array<Array<Color>>? {
         val pixels: Array<Array<Color>> = Array(bmpInfo.width) {Array(bmpInfo.height) {Color.RED}}
         if(bmpInfo.headerSize == 12 || bmpInfo.compression == BmpInfo.CompressionType.BI_RGB ||
         bmpInfo.compression == BmpInfo.CompressionType.BI_BITFIELDS || bmpInfo.compression == BmpInfo.CompressionType.BI_ALPHABITFIELDS) {
@@ -147,13 +153,14 @@ class BmpParser: Parser {
                         if(byteNum % rowByteWidth != 0)
                             byteNum += (rowByteWidth - (byteNum % rowByteWidth))
                     }
-//                    TODO("Not implemented pixel data parsing with 16 or more bits per pixel.")
                 } else {
-                    TODO("Not implemented pixel data parsing with 16 or more bits per pixel.")
+                    Logger.error("Not implemented pixel data parsing from this type of BMP.")
+                    return null
                 }
             }
         } else {
-            TODO("Not implemented parsing pixel data with other compression algorithms")
+            Logger.error("Not implemented parsing pixel data with other compression algorithms")
+            return null
         }
         return pixels
     }
@@ -161,7 +168,6 @@ class BmpParser: Parser {
     private fun intEqualsString(bytesToInt: Int, string: String): Boolean {
         var charIndex = 0
         val sum = (string).sumBy { it.toInt().shl(8*charIndex++) }
-//    Logger.debugInfo("intEqualsString($bytesToInt, \"$string\") called. Comparing $bytesToInt and $sum")
         return sum == bytesToInt
     }
 }
