@@ -28,6 +28,18 @@ class BmpInfo(override var width: Int = 0, override var height: Int = 0): ImageI
     var colorsUsed: Int = 0 //size of colors table in units
     var colorsImportant: Int = 0
 
+    //ver 4(108)
+    var redMask: Int = 255
+    var greenMask: Int = 255
+    var blueMask: Int = 255
+    var alphaMask: Int = 255
+    var colorSpaceType: ColorSpaceType = ColorSpaceType.LCS_CALIBRATED_RGB
+//    var endPoints:
+    var gammaRed = 0
+    var gammaGreen = 0
+    var gammaBlue = 0
+
+
     enum class CompressionType {
         BI_RGB, BI_RLE8, BI_RLE4, BI_BITFIELDS,
         BI_JPEG, BI_PNG, BI_ALPHABITFIELDS;
@@ -42,6 +54,32 @@ class BmpInfo(override var width: Int = 0, override var height: Int = 0): ImageI
                     5 -> return BI_PNG
                     6 -> return BI_ALPHABITFIELDS
                     else -> return BI_RGB
+                }
+            }
+        }
+    }
+
+    enum class ColorSpaceType {
+        LCS_CALIBRATED_RGB, LCS_sRGB, LCS_WINDOWS_COLOR_SPACE,
+        PROFILE_LINKED, PROFILE_EMBEDDED;
+        companion object {
+            fun getByString(s: String): ColorSpaceType {
+                when(s) {
+                    "sRGB" -> return LCS_sRGB
+                    "Win " -> return LCS_WINDOWS_COLOR_SPACE
+                    "LINK" -> return PROFILE_LINKED
+                    "MBED" -> return PROFILE_EMBEDDED
+                    else -> return LCS_CALIBRATED_RGB
+                }
+            }
+
+            fun getByValue(value: Int): ColorSpaceType {
+                when(value) {
+                    0x73524742 -> return LCS_sRGB
+                    0x57696E20 -> return LCS_WINDOWS_COLOR_SPACE
+                    0x4C494E4B -> return PROFILE_LINKED
+                    0x4D424544 -> return PROFILE_EMBEDDED
+                    else -> return LCS_CALIBRATED_RGB
                 }
             }
         }

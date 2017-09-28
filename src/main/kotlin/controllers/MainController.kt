@@ -20,10 +20,6 @@ class MainController : Controller{
     private var view: View = ImageView() //default
     override var viewObserver: ViewObserver = ViewObserver(null, view)
 
-    override fun handleInput(input: String) {
-        Logger.debugInfo("MainController.handlerInput($input) called")
-    }
-
     override fun openFile(pathString: String) {
         parser = ParserFactory.getParser(pathString.split("/").last())
         if(parser != null) {

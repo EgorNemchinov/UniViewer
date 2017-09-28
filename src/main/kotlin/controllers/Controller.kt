@@ -11,5 +11,4 @@ interface Controller {
     var viewObserver: ViewObserver
 
     fun openFile(pathString: String)
-    fun handleInput(input: String)
 }

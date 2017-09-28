@@ -26,7 +26,10 @@ class ParserFactory {
             }
             when(splitByDot[1]) {
                 "bmp" -> return BmpParser()
-                else -> return null
+                else -> {
+                    Logger.error("Unsupported file format.")
+                    return null
+                }
             }
         }
     }
