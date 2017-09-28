@@ -1,4 +1,4 @@
-# Univiewer
+# UniViewer
 Console-application able to view files of certain types.
 Even though the only supported type is BMP, one of the main advantages of this MVC architecture is that new modules (image formats, user interfaces, etc.) are easy to add.
 
@@ -19,3 +19,5 @@ Here's diagram, I think that's quite enough to get basic understanding:
  - Create ImageInfo for that format
  - Change ParserFactory to return certain Parser for this extension
 
+### Try it out
+To run all the tests, execute [src/test/kotlin/BmpTest.kt](https://github.com/ImmortalTurtle/UniViewer/blob/master/src/test/kotlin/BmpTest.kt)
